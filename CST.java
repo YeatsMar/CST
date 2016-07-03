@@ -88,7 +88,7 @@ public class CST {
                 e.used = true;
                 continue;
             }
-            if (!check(p, e)) {
+            if (!p.check(e)) {
                 closePath();
                 continue;
             }

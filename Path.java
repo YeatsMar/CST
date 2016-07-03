@@ -1,33 +1,35 @@
 package cst;
 
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
 /**
  * Created by mayezhou on 16/7/2.
  */
-public class Path implements Cloneable{
+public class Path implements Cloneable {
     public LinkedList<Node> nodes;
     public boolean processed;
     public boolean finished;
     public boolean contradictory;
     private int index;
-//    private ListIterator
+    private ListIterator<Node> nodeListIterator;
+    private LinkedHashSet<Node> reducesNodes;
 
     public Path() {
         nodes = new LinkedList<>();
         processed = false;
         finished = false;
         contradictory = false;
-//        iterator = nodes.listIterator();
+        nodeListIterator = nodes.listIterator();
+        index = 0;
+        reducesNodes = new LinkedHashSet<>();
     }
 
     public Path clone() {
         Path newPath = new Path();
-        for (Node e:
-             this.nodes) {
-            newPath.add(e);
-        }
+        newPath.nodes.addAll(this.nodes);
+        newPath.reducesNodes.addAll(this.reducesNodes);
         return newPath;
     }
 
@@ -40,7 +42,21 @@ public class Path implements Cloneable{
             finished = true;
             return null;
         }
-        return nodes.get(index++);
+        Node result = nodes.poll();
+        reducesNodes.add(result);
+        return result;
+    }
+
+    public boolean check(Node node) {
+        for (Node e :
+                reducesNodes) {
+            if (e.proposition.equals(node.proposition)
+                    && (e.value != node.value)) {
+                contradictory = true;
+                return false;
+            }
+        }
+        return true;
     }
 
     public boolean isFinished() {
