@@ -1,35 +1,27 @@
 package cst;
 
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
-import java.util.ListIterator;
 
 /**
  * Created by mayezhou on 16/7/2.
  */
 public class Path implements Cloneable {
     public LinkedList<Node> nodes;
-    public boolean processed;
     public boolean finished;
     public boolean contradictory;
     private int index;
-    private ListIterator<Node> nodeListIterator;
-    private LinkedHashSet<Node> reducesNodes;
 
     public Path() {
         nodes = new LinkedList<>();
-        processed = false;
         finished = false;
         contradictory = false;
-        nodeListIterator = nodes.listIterator();
         index = 0;
-        reducesNodes = new LinkedHashSet<>();
     }
 
     public Path clone() {
         Path newPath = new Path();
         newPath.nodes.addAll(this.nodes);
-        newPath.reducesNodes.addAll(this.reducesNodes);
+        newPath.index = this.index;
         return newPath;
     }
 
@@ -38,18 +30,20 @@ public class Path implements Cloneable {
     }
 
     public Node get() {
-        if (nodes.size() < 1) {
+        if (index > nodes.size() - 1) {
             finished = true;
             return null;
         }
-        Node result = nodes.poll();
-        reducesNodes.add(result);
-        return result;
+        return nodes.get(index++);
     }
 
+    /**
+     * check whether the node has a contradictory value on a path
+     */
     public boolean check(Node node) {
-        for (Node e :
-                reducesNodes) {
+        int max = nodes.indexOf(node);
+        for (int i = 0; i < max; i++) {
+            Node e = nodes.get(i);
             if (e.proposition.equals(node.proposition)
                     && (e.value != node.value)) {
                 contradictory = true;
@@ -60,7 +54,7 @@ public class Path implements Cloneable {
     }
 
     public boolean isFinished() {
-        if (contradictory || nodes.size() <= 0) {
+        if (contradictory) {
             finished = true;
         }
         return finished;

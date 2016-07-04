@@ -16,6 +16,7 @@ public class Node {
         used = false;
     }
 
+    //key: used attribute should be separate
     public Node clone() {
         Node ano = new Node(this.proposition, this.value);
         ano.reduced = this.reduced;

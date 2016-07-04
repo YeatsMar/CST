@@ -5,6 +5,7 @@ import parser.Result;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.ListIterator;
@@ -18,6 +19,7 @@ public class CST {
     private Parser parser;
     private Scanner scanner;
     private LinkedList<Node> premise;
+    private PrintWriter output;
 
     public CST() {
         parser = Parser.getParser();
@@ -25,14 +27,13 @@ public class CST {
         premise = new LinkedList<>();
     }
 
-    public static void main(String[] args) {
-        CST tree = new CST();
-        tree.build("input/1.txt");
-    }
-
+    /**
+     * initialize and grow, the only public api
+     */
     public void build(String filename) {
         try {
-            scanner = new Scanner(new File(filename));
+            scanner = new Scanner(new File("input/"+filename));
+            output = new PrintWriter(new File("output/"+filename));
             String proposition = scanner.nextLine();
             Node root = new Node(proposition, false);
             Path p = new Path();
@@ -49,11 +50,16 @@ public class CST {
         }
     }
 
+    /**
+     * key of building a CST
+     */
     private void grow() {
         while (!isFinished()) {
             reduce();
+            closePath();
             introduce();
         }
+        output.close();
     }
 
     /**
@@ -66,6 +72,7 @@ public class CST {
         for (Path p :
                 paths) {
             p.add(a);
+            a = a.clone();
         }
     }
 
@@ -83,13 +90,13 @@ public class CST {
                 System.exit(0);
             }
             if (!e.used)
-                System.out.println(e.getInfo());
+                output.println(e.getInfo());
             if (e.isReduced()) {
                 e.used = true;
                 continue;
             }
             if (!p.check(e)) {
-                closePath();
+                e.used = true;
                 continue;
             }
             if (parser.isLetter(e.proposition)) {
@@ -112,13 +119,11 @@ public class CST {
                         Path bro = clonePath(p, pathListIterator);
                         p.add(new Node(result.operand1, true));
                         bro.add(new Node(result.operand2, true));
-                        bro.processed = true;
                         break;
                     case "imply":
                         Path clonePath = clonePath(p, pathListIterator);
                         p.add(new Node(result.operand1, false));
                         clonePath.add(new Node(result.operand2, true));
-                        clonePath.processed = true;
                         break;
                     case "eq":
                         Path clonepath = clonePath(p, pathListIterator);
@@ -126,8 +131,12 @@ public class CST {
                         p.add(new Node(result.operand2, true));
                         clonepath.add(new Node(result.operand1, false));
                         clonepath.add(new Node(result.operand2, false));
-                        clonepath.processed = true;
                         break;
+                    case "not":
+                        p.add(new Node(result.operand1, !e.value));
+                        break;
+                    default:
+                        System.out.println("Proposition parsing error!");
                 }
             } else {
                 switch (result.operator) {
@@ -139,7 +148,6 @@ public class CST {
                         Path bro = clonePath(p, pathListIterator);
                         p.add(new Node(result.operand1, false));
                         bro.add(new Node(result.operand2, false));
-                        bro.processed = true;
                         break;
                     case "imply":
                         p.add(new Node(result.operand1, true));
@@ -151,8 +159,12 @@ public class CST {
                         p.add(new Node(result.operand2, false));
                         clonepath.add(new Node(result.operand1, false));
                         clonepath.add(new Node(result.operand2, true));
-                        clonepath.processed = true;
                         break;
+                    case "not":
+                        p.add(new Node(result.operand1, !e.value));
+                        break;
+                    default:
+                        System.out.println("Proposition parsing error!");
                 }
             }
             e.used = true;
@@ -177,7 +189,9 @@ public class CST {
         return result;
     }
 
-    //used when an atomic tableau has two branches
+    /**
+     * used when an atomic tableau has two branches
+     */
     private Path clonePath(Path path, ListIterator<Path> pathListIterator) {
         Path another = path.clone();
         pathListIterator.add(another);
@@ -186,20 +200,8 @@ public class CST {
     }
 
     /**
-     * check whether the node has a contradictory value on a path
+     * remove contradictory paths
      */
-    private boolean check(Path path, Node node) {
-        for (Node e :
-                path.nodes) {
-            if (e.proposition.equals(node.proposition)
-                    && (e.value != node.value)) {
-                path.contradictory = true;
-                return false;
-            }
-        }
-        return true;
-    }
-
     private void closePath() {
         ListIterator<Path> pathIterator = paths.listIterator();
         while (pathIterator.hasNext()) {
