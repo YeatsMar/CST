@@ -6,10 +6,7 @@ import parser.Result;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.ListIterator;
-import java.util.Scanner;
+import java.util.*;
 
 /**
  * Created by mayezhou on 16/7/2.
@@ -32,21 +29,27 @@ public class CST {
      */
     public void build(String filename) {
         try {
-            scanner = new Scanner(new File("input/"+filename));
-            output = new PrintWriter(new File("output/"+filename));
+            scanner = new Scanner(new File("input/" + filename));
+            output = new PrintWriter(new File("output/" + filename));
             String proposition = scanner.nextLine();
             Node root = new Node(proposition, false);
             Path p = new Path();
             p.add(root);
             paths.add(p);
-            int n = scanner.nextInt();
+            int n = scanner.nextInt();//if no premise, will throw NoSuchElementException
             scanner.nextLine();
             for (int i = 0; i < n; i++) {
                 premise.add(new Node(scanner.nextLine(), true));
             }
             grow();
+            buildCounterexample();
+            output.close();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
+        } catch (NoSuchElementException e) {
+            grow();
+            buildCounterexample();
+            output.close();
         }
     }
 
@@ -59,7 +62,6 @@ public class CST {
             closePath();
             introduce();
         }
-        output.close();
     }
 
     /**
@@ -86,7 +88,8 @@ public class CST {
             if (e == null) //this path is finished
                 return;
             if (!parser.isWellDefine(e.proposition)) {
-                System.out.println("not well defined!");
+                output.println("not well defined!");
+                output.close();
                 System.exit(0);
             }
             if (!e.used)
@@ -210,5 +213,33 @@ public class CST {
                 pathIterator.remove();
             }
         }
+    }
+
+    /**
+     * Bonus here: print T nodes on each contradictory path
+     */
+    private void buildCounterexample() {
+        if (paths.size() > 0)
+            output.println("\n\n\nWe can build counterexamples as follows:");
+        int i = 0;
+        for (Path path :
+                paths) {
+            if (path.contradictory)
+                continue;
+            output.println("Case " + (i++) + ":");
+            LinkedHashSet<String> trueNodes = new LinkedHashSet<>();
+            for (Node e :
+                    path.nodes) {
+                if (parser.isLetter(e.proposition)
+                        && e.value)
+                    trueNodes.add(e.proposition);
+            }
+            for (String e :
+                    trueNodes) {
+                output.println(e);
+            }
+        }
+        if (i == 0)
+            output.println("Valid, so no counterexample.");
     }
 }

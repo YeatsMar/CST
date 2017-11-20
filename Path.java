@@ -54,7 +54,7 @@ public class Path implements Cloneable {
     }
 
     public boolean isFinished() {
-        if (contradictory) {
+        if (contradictory || index == nodes.size()) {
             finished = true;
         }
         return finished;
